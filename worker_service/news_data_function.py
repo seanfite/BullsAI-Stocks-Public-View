@@ -124,7 +124,7 @@ def send_to_chatgpt(messages):
     """Send the given messages to the ChatGPT API and return the response."""
     endpoint_url = "https://api.openai.com/v1/chat/completions"
     headers = {
-        "Authorization": "Bearer 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",
+        "Authorization": "",
         "Content-Type": "application/json"
     }
     data = {
