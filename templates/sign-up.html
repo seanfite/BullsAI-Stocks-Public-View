@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bullsai Stocks</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='bull-favicon.png') }}">
+    <style>
+        .custom-hover-text:hover {
+            color: #2E4543; 
+        }
+
+        .whitened-out {
+            opacity: .1;
+        }
+
+        body.blur-mode::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.5); /* White with 50% opacity */
+            backdrop-filter: blur(2px);
+            z-index: 10;
+        }
+
+        @font-face {
+            font-family: 'Gill Sans Ultra Bold';
+            src: url('static/GillSansUltraBold.otf') format('opentype');
+        }
+
+        @media (max-width: 640px) {
+            body.blur-mode::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: white;
+                backdrop-filter: blur(5px);
+                z-index: 10;
+            }
+        }
+    </style>
+
+</head>
+<body style="font-family: 'Century Gothic', Arial, sans-seri;">
+
+    <!-- Overlay -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-80 opacity-0 hidden z-10 transition-opacity duration-1000 ease-in-out"></div>
+
+    <!-- Header -->
+    <section class="fixed top-0 z-40 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+        <div class="w-full mx-auto">
+            <div class="relative overflow-hidden shadow-md dark:bg-gray-800" style="background-color: #2E4543">                             
+                <div class="flex items-center justify-between p-4 space-y-3 sm:flex sm:space-y-0 sm:space-x-4"> 
+                    
+                    <!-- Title -->  
+                    <div style="font-family: 'Gill Sans Ultra Bold', sans-serif; font-size: 40px;";>
+                        <h5 class="color-white text-white ml-1">
+                            <span style="color: #A6A6A6;">Bulls</span>ai
+                        </h5>
+                    </div>
+
+                    <!-- Sidebar Toggle Button -->
+                    <div class="p-2 pb-3">
+                        <button id="sidebarToggle" class="text-gray-500 rounded-lg focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700">
+                            <svg class="w-6 h-6 text-white dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1 1h15M1 7h15M1 13h15"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sidebar -->
+    <aside id="default-sidebar" data-drawer-target="default-sidebar" class="drawer drawer-end fixed top-0 inset-y-0 left-0 z-30 w-72 overflow-y-auto p-4 transform -translate-x-full transition-transform duration-500 ease-in-out" aria-label="Sidenav" style="background-color: #2E4543">
+        <div class="overflow-y-auto py-5 px-3 h-full" style="background-color: #2E4543">
+            <ul class="space-y-2">
+                <li>
+                    <a href="/" class="flex items-center p-2 mt-20 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white hover:outline-dark dark:hover:bg-gray-700 group">
+                        <span class="ml-3">HOME</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/chat" class="flex items-center p-2 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white hover:outline-dark dark:hover:bg-gray-700 group">
+                        <span class="ml-3">AI CHAT</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/get-tokens" class="flex items-center p-2 text-white font-normal rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                      <span class="ml-3">GET TOKENS</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/news" class="flex items-center p-2 text-base font-normal text-white rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                        <span class="ml-3">NEWS</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/stocks" class="flex items-center p-2 text-base font-normal text-white rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                        <span class="ml-3">STOCKS</span>
+                    </a>
+                </li>
+            </ul>
+            <ul class="pt-5 mt-5 space-y-2 border-t border-gray-200 dark:border-gray-700">
+                <li>
+                    <a href="/login" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">                                
+                        <span class="ml-3">LOGIN</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/account-settings" class="flex items-center p-2 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white dark:hover:bg-gray-700 group">                                
+                        <span class="ml-3">ACCOUNT</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/contact" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">
+                        <span class="ml-3">CONTACT US</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/disclaimers" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">                                
+                        <span class="ml-3">TERMS OF USE</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Sign-Up Form -->
+    <main>
+        <section class="bg-gray-50 dark:bg-gray-900">
+            <div class="flex flex-col items-center justify-center px-6 py-40 mx-auto">
+                <div class="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
+                    <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
+                        <h1 class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
+                            CREATE ACCOUNT
+                        </h1>
+                        <form id="signupForm" class="space-y-4 md:space-y-6" action="#">
+                            <div>
+                                <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">YOUR EMAIL</label>
+                                <input type="email" name="email" id="email" style="font-size: 12px;" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="YOUR@EMAIL.COM" required="">
+                            </div>
+                            <div>
+                                <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">PASSWORD</label>
+                                <input type="password" name="password" id="password" placeholder="••••••••" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required="">
+                            </div>
+                            <div>
+                                <label for="confirm-password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">CONFIRM PASSWORD</label>
+                                <input type="confirm-password" name="confirm-password" id="confirm-password" placeholder="••••••••" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required="">
+                            </div>
+                            <div id="error-message" class="hidden text-sm font-medium text-red-500">
+                                <span></span>
+                            </div>                        
+                            <div class="flex items-start">
+                                <div class="flex items-center h-5">
+                                <input id="terms" aria-describedby="terms" type="checkbox" class="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800" required="">
+                                </div>
+                                <div class="ml-3 text-sm">
+                                <label for="terms" style="font-size: 12px" class="font-light text-gray-500 dark:text-gray-300">I ACCEPT THE <a class="font-medium text-primary-600 hover:underline dark:text-primary-500" href="#">TERMS AND CONDITIONS</a></label>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full text-white font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800" style="background-color: #2E4543">CONTINUE</button>
+                            <div class="flex justify-between items-center">
+                                <p style="font-size: 12px" class="text-sm font-light text-gray-500 dark:text-gray-400">
+                                    ALREADY HAVE AN ACCOUNT?
+                                </p>
+                                <a href="/login" style="font-size: 12px" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500">
+                                    LOGIN HERE
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Terms and Conditions Pop-Up -->
+    <div id="info-popup" tabindex="-1" class="hidden overflow-y-auto overflow-x-hidden fixed top-24 bottom-10 right-0 left-0 z-35 w-full md:inset-0 h-modal md:h-full">
+        <div class="relative p-4 w-full md:max-w-4xl md:mt-24 md:ml-36 max-w-lg h-full md:h-auto">
+            <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 md:p-8">
+                <div class="mb-4 text-sm font-light text-black dark:text-gray-400">
+                    
+                     <!-- Terms of Use Section --> 
+                    <h2 class="mb-10 text-xl tracking-tight font-extrabold text-center text-gray-900 dark:text-white">TERMS OF USE</h2>
+                    
+                    <h3 class="text-lg font-semibold">Last Updated: December 3, 2023</h3>
+                    <p>Thank you for using Bullsaistocks.com ("Website", "Service", "we", "us", "our"). By using our Website and Service, you agree to comply 
+                        with and be bound by the following terms and conditions.</p>
+                    
+                    <h3 class="text-lg font-semibold">Acceptance of Terms</h3>
+                    <p>Your access to and use of Bullsaistocks.com is subject exclusively to these Terms of Use. By using the Website, you represent that
+                        you are at least the age of majority in your state or province of residence and you consent to these Terms.</p>
+                    
+                    <h3 class="text-lg font-semibold">Not Investment or Financial Advice</h3>
+                    <p>The information provided on Bullsaistocks.com, including any tools or features such as the 'Chat-Bot or AI Chat', or 'Daily Pick' is intended for
+                        informational and educational purposes only. It should not be construed as investment advice, financial advice, trading advice, or as a recommendation for any specific type of security or investment strategy. Bullsaistocks.com is not an investment advisor, brokerage firm, or investment company. You agree to consult a qualified financial advisor before making any investment decisions.</p>
+                    
+                    <h3 class="text-lg font-semibold">Not a Buy Recommendation</h3>
+                    <p>The 'Chat-Bot or AI Chat' is NOT a buy recommendation. The 'Daily Pick' is NOT a buy recommendation. Those tools are designed to identify potential investment opportunities. It is
+                        derived strictly from proprietary algorithms and should not be considered a reliable indicator of future performance.</p>
+                    
+                    <h3 class="text-lg font-semibold">Disclaimer Regarding Financial Professionals</h3>
+                    <p>Bullsaistocks.com, a service provided by Bullsai DBA StockGPT LLC, has no involvement in or responsibility for any financial
+                        advice provided by the financial professionals we refer users to, and we are not liable for any losses resulting from their advice.</p>
+                    
+                    <h3 class="text-lg font-semibold">User Responsibility and Risk Acknowledgment</h3>
+                    <p>By using this tool, you acknowledge that you are solely responsible for your own financial decisions. It is your responsibility
+                        to evaluate the merits and risks associated with investing in any financial instruments. Investments come with the risk of losing money, and past performance is no guarantee of future results. We strongly advise consulting a qualified investment advisor or other financial professional to assist you. Please note that Bullsaistocks.com, a service provided by Bullsai DBA StockGPT LLC, is not responsible for any losses resulting from using the ‘Chat-Bot or AI Chat’ tool or the 'Daily Pick' selection of stocks.</p>
+                    
+                    <h3 class="text-lg font-semibold">Data and Privacy</h3>
+                    <p>Please refer to our <a href="#" id="open-privacy-policy" class="text-blue-500 hover:text-blue-700">Privacy Policy</a> for information on how we collect, use, and disclose information from our users.</p>
+     
+                    <h3 class="text-lg font-semibold">User Conduct</h3>
+                    <p>You agree not to use the Website for any unlawful purpose or any purpose prohibited under this clause. You agree not to use the Website
+                        in any way that could damage the Website, Service, or general business of Bullsaistocks.com.</p>
+                    
+                    <h3 class="text-lg font-semibold">Limitation of Liability</h3>
+                    <p>To the maximum extent permitted by law, Bullsaistocks.com, its owners, employees, and affiliates will not be liable for any direct,
+                         indirect, consequential, or any other form of loss or damage that may be suffered by a user through the use of the Bullsaistocks.com Website and Service.</p>
+                    
+                    <h3 class="text-lg font-semibold">Governing Law</h3>
+                    <p>These Terms shall be governed by and construed in accordance with the laws of the State of Washington, United States of America, 
+                        without regard to its conflict of law principles.</p>
+                    
+                    <h3 class="text-lg font-semibold">Modifications</h3>
+                    <p>Bullsaistocks.com reserves the right to change these Terms at any time. Your continued use of the Website will be deemed as irrevocable
+                        acceptance of any revisions.</p>
+                    
+                    <h3 class="text-lg font-semibold">Entire Agreement</h3>
+                    <p>These Terms, along with any additional guidelines, policies, or disclaimers incorporated by reference, represent the entire understanding
+                        between you and Bullsaistocks.com, a service provided by Bullsai, in relation to your use of the Website and supersedes all prior promises, agreements, or representations, whether written or oral.</p>
+                    
+                    <h3 class="text-lg font-semibold">Contact Information</h3>
+                    <p>For any queries regarding these Terms, you may contact us at bullsaistocks@gmail.com.</p>
+                    
+                    <p>By using this Website, you acknowledge that you have read, understood, and agree to abide by these Terms.</p>
+                    <p><br>The information and tools provided on WallStreetAI.com are for informational and educational purposes only and do not constitute financial
+                        or investment advice. Bullsaistocks.com is not an investment advisor, brokerage firm, or investment company. The 'Chat-Bot or AI Chat' and the 'Daily Pick' are
+                        not buy recommendations and provide no guarantee of profit. Our 'Chat-Bot or AI Chat' is powered by Chat GPT. Our stock data and news is powered by Finnhub. And our 'Daily Pick' is generated from a proprietary algorithm we have created. Invest at your own risk and consult with a qualified financial advisor
+                        before making any investment decisions.</p>
+                    <div class="justify-between items-center pt-0 mt-5 space-y-4 sm:flex sm:space-y-0">
+                        <div class="items-center text-right space-y-4 sm:space-x-4 sm:flex sm:space-y-0">
+                            <button id="close-modal" type="button" style="background-color: #2E4543;" class="py-2 px-4 w-full text-sm font-medium text-white rounded-lg border border-gray-200 sm:w-auto hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">CLOSE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Pop-Up -->
+    <div id="privacy-policy-popup" tabindex="-1" class="hidden overflow-y-auto overflow-x-hidden fixed top-24 bottom-10 right-0 left-0 z-35 w-full md:inset-0 h-modal md:h-full">
+        <div class="relative p-4 w-full max-w-lg md:max-w-4xl md:mt-24 md:ml-36 h-full md:h-auto">
+            <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 md:p-8">
+                <div class="mb-4 text-sm font-light text-black dark:text-gray-400">
+                    <h2 class="mb-10 text-xl tracking-tight font-extrabold text-center text-gray-900 dark:text-white">PRIVACY POLICY</h2>          
+                         <!-- Privacy Policy Content -->
+                         <p><strong>Last Updated: December 3, 2023</strong></p>
+                         <p>Thank you for using Bullsaistocks.com ("Website", "Service", "we", "us", "our"). This Privacy Policy explains how we collect, use, and disclose information from our users. This Privacy Policy is incorporated into and is a part of the Terms of Use of the Website. By using the Website, you agree to the terms of this Privacy Policy and the Terms of Use.</p>
+         
+                         <h3 class="text-lg font-semibold">What Information We Collect</h3>
+                         <p>WallStreetAI.com, a service provided by Wall Street AI, Inc, does require users to create an account and provide personal information to use the "Chat-Bot or AI Chat" tool.</p>
+         
+                         <h3 class="text-lg font-semibold">Data Security</h3>
+                         <p>We take reasonable measures to protect your personal information, but no method of transmission over the Internet or method of electronic storage is 100% secure. Therefore, while we strive to use acceptable means to protect your personal information, we cannot guarantee its absolute security.</p>
+ 
+                         <h3 class="text-lg font-semibold">Data Retention</h3>
+                         <p>We retain your contact information for as long as necessary for the purposes set out in this Privacy Policy, or as required by law.</p>
+         
+                         <h3 class="text-lg font-semibold">User Responsibility</h3>
+                         <p>By using our tool, you acknowledge that you are solely responsible for your own financial decisions, as stated in our Terms of Use.</p>
+         
+                         <h3 class="text-lg font-semibold">Changes to This Privacy Policy</h3>
+                         <p>Bullsaistocks.com reserves the right to change this Privacy Policy at any time. Your continued use of the Website will be deemed as irrevocable acceptance of any revisions.</p>
+         
+                         <h3 class="text-lg font-semibold">Governing Law</h3>
+                         <p>This Privacy Policy is governed by and construed in accordance with the laws of the State of Washington, United States of America, without regard to its conflict of law principles.</p>
+         
+                         <h3 class="text-lg font-semibold">Contact Information</h3>
+                         <p>For any queries regarding this Privacy Policy, you may contact us at bullsaistocks@gmail.com.</p>
+         
+                         <p>By using this Website, you acknowledge that you have read, understood, and agree to abide by this Privacy Policy and our Terms of Use.</p>
+                         <p>The information and tools provided on Bullsaistocks.com are for informational and educational purposes only.<br><br></p>       
+                         <div class="items-center text-right space-y-4 sm:space-x-4 sm:flex sm:space-y-0">
+                            <button id="close-privacy-modal" type="button" style="background-color:#2E4543" class="py-2 px-4 w-full text-sm font-medium text-white rounded-lg border border-gray-200 sm:w-auto dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">CLOSE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JavaScript for interactive components -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            var sidebar = document.getElementById('default-sidebar');
+            var toggleButton = document.getElementById('sidebarToggle'); 
+            var body = document.body;
+        
+            // Function to toggle sidebar
+            function toggleSidebar() {
+                console.log('Sidebar toggle clicked');
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebar.classList.add('translate-x-0');
+                    setTimeout(() => { overlay.classList.remove('opacity-0'); }, 20); // Delay for CSS transition
+                    body.classList.add('blur-mode');
+                } else {
+                    sidebar.classList.remove('translate-x-0');
+                    sidebar.classList.add('-translate-x-full');
+                    setTimeout(() => { overlay.classList.add('hidden'); }, 1000); // Match duration of transition
+                    body.classList.remove('blur-mode');
+                }
+            }
+        
+            // Event listener for the toggle button
+            toggleButton.addEventListener('click', toggleSidebar);
+
+            // Event listener for clicking outside the sidebar
+            document.addEventListener('click', function(event) {
+                var isClickInsideSidebar = sidebar.contains(event.target) || toggleButton.contains(event.target);
+                var isSidebarOpen = sidebar.classList.contains('translate-x-0');
+
+                if (!isClickInsideSidebar && isSidebarOpen) {
+                    toggleSidebar();
+                }
+            });
+        
+        });
+    </script>  
+    <script type="module">
+        // Firebase module imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
+    
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: "",
+            measurementId: ""
+        };
+    
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+
+         // Terms and Conditions PopUp
+        const modalEl = document.getElementById('info-popup');
+        const closeModalEl = document.getElementById('close-modal');
+
+        // Privacy PopUp 
+        const privacyModalEl = document.getElementById('privacy-policy-popup')
+        const closePrivacyModalEl = document.getElementById('close-privacy-modal')
+
+        const mainContent = document.querySelector('main');
+
+        // Function to show the terms and conditions popup
+        function showPrivacyModal() {
+            modalEl.classList.remove('hidden');
+            mainContent.classList.add('whitened-out');
+        }
+
+        // Function to hide the terms and conditions popup
+        function hidePrivacyModal() {
+            modalEl.classList.add('hidden');
+            mainContent.classList.remove('whitened-out');
+        }
+
+        // Event listener for the close button
+        closeModalEl.addEventListener('click', hidePrivacyModal);
+
+        // Function to show the Privacy Policy popup
+        function showPrivacyPolicyModal() {
+            privacyModalEl.classList.remove('hidden');
+            mainContent.classList.add('whitened-out');
+        }
+
+        // Function to hide the Privacy Policy popup
+        function hidePrivacyPolicyModal() {
+            privacyModalEl.classList.add('hidden');
+            mainContent.classList.remove('whitened-out');
+        }
+
+        // Event listener for the Privacy Policy link in the Terms and Conditions pop-up
+        const openPrivacyPolicyLink = document.getElementById('open-privacy-policy');
+        if (openPrivacyPolicyLink) {
+            openPrivacyPolicyLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Hide Terms and Conditions pop-up
+                hidePrivacyModal();
+                // Show Privacy Policy pop-up
+                showPrivacyPolicyModal();
+            });
+        }
+
+        // Event listener for the close button of the Privacy Policy modal
+        closePrivacyModalEl.addEventListener('click', hidePrivacyPolicyModal);
+
+        // Event listener for Terms and Conditions link
+        document.querySelector('label[for="terms"] a').addEventListener('click', function(e) {
+            e.preventDefault();
+            showPrivacyModal();
+        });
+    
+        // Event listener for form submission
+        document.getElementById('signupForm').addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent the default form submission
+    
+            // Get form values
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const errorMessage = document.getElementById('error-message');
+            const errorTextSpan = errorMessage.querySelector('span');
+            const termsAccepted = document.getElementById('terms').checked;
+
+            // Clear previous text colors
+            errorMessage.classList.remove('text-red-500', 'text-green-500');
+
+            // Simple client-side validation for password match
+            if (password !== confirmPassword) {
+                    errorTextSpan.innerText = 'Passwords do not match.';
+                    errorMessage.classList.add('text-red-500');
+                    errorMessage.classList.remove("hidden");
+                return;
+            }
+    
+            try {
+                // Create user with email and password
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                // Send email verification
+                await sendEmailVerification(user);
+                // Call the backend to initialize the user in Firestore
+                try {
+                    const firestoreResponse = await fetch('/firestore-initialize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ uid: user.uid, termsAccepted: termsAccepted })
+                    });
+                    const firestoreData = await firestoreResponse.json();
+                     // Success message handling
+                    errorTextSpan.innerText = 'Account created successfully. Please check your email for verification link.';
+                    errorMessage.classList.add('text-green-500');
+                    errorMessage.classList.remove("hidden");
+                    // Reset the form fields
+                    document.getElementById('email').value = ''; // Reset email input field
+                    document.getElementById('password').value = ''; // Reset password input field
+                    document.getElementById('confirm-password').value = ''; // Reset confirm password input field
+                    document.getElementById('terms').checked = false; // Uncheck terms checkbox
+
+                } catch (err) {
+                    console.error('Error initializing user in Firestore:', err);
+                    errorTextSpan.innerText = 'There was a technical issue, please try again.';
+                    errorMessage.classList.add('text-red-500');
+                    errorMessage.classList.remove("hidden");
+                }
+            } catch (error) {
+                errorTextSpan.innerText = 'Account with this email address already exists.';
+                errorMessage.classList.add('text-red-500');
+                errorMessage.classList.remove("hidden");
+            }
+        });
+    </script>    
+</body>
+</html>

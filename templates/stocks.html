@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bullsai Stocks</title>
+    <!-- Include Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='bull-favicon.png') }}">
+    <style>
+        .custom-hover-text:hover {
+            color: #2E4543; 
+        }
+
+        @font-face {
+            font-family: 'Gill Sans Ultra Bold';
+            src: url('static/GillSansUltraBold.otf') format('opentype');
+        }
+
+        body.blur-mode::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.5); 
+            backdrop-filter: blur(2px);
+            z-index: 10;
+        }
+
+        @media (max-width: 640px) {
+            body.blur-mode::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: white;
+                backdrop-filter: blur(5px);
+                z-index: 10;
+            }
+
+            .small-screen-padding {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+
+            .small-screen-padding-dropdown {
+                padding-left: 18px;
+                padding-right: 12px;
+            }
+        }
+    </style>
+</head>
+<body style="font-family: 'Century Gothic', Arial, sans-seri; background-color: #2E4543;">
+
+    <!-- Overlay -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-80 opacity-0 hidden z-10 transition-opacity duration-1000 ease-in-out"></div>
+
+    <!-- Header -->
+    <section class="fixed top-0 z-40 w-full border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700" style="background-color: #2E4543">
+        <div class="w-full mx-auto">
+            <div class="relative overflow-hidden shadow-md dark:bg-gray-800" style="background-color: #2E4543">                             
+                <div class="flex items-center justify-between p-4 space-y-3 sm:flex sm:space-y-0 sm:space-x-4"> 
+                    
+                    <!-- Title -->  
+                    <div style="font-family: 'Gill Sans Ultra Bold', sans-serif; font-size: 40px;";>
+                        <h5 class="color-white text-white ml-1">
+                            <span style="color: #A6A6A6;">Bulls</span>ai
+                        </h5>
+                    </div>
+
+                    <!-- Sidebar Toggle Button -->
+                    <div class="p-2 pb-3">
+                        <button id="sidebarToggle" class="text-gray-500 rounded-lg focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700">
+                            <svg class="w-6 h-6 text-white dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1 1h15M1 7h15M1 13h15"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading Spinner -->
+    <div id="spinner" class="hidden fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+        <!-- Spinner Element with Dollar Symbol Inside -->
+        <div style="background-color: #2E4543;" class="relative animate-spin rounded-full h-12 w-12 flex items-center justify-center">
+            <span class="absolute text-white text-xl">$</span>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="default-sidebar" data-drawer-target="default-sidebar" class="drawer drawer-end fixed top-0 inset-y-0 left-0 z-30 w-72 overflow-y-auto p-4 transform -translate-x-full transition-transform duration-500 ease-in-out" aria-label="Sidenav" style="background-color: #2E4543">
+        <div class="overflow-y-auto py-5 px-3 h-full" style="background-color: #2E4543">
+            <ul class="space-y-2">
+                <li>
+                    <a href="/" class="flex items-center p-2 mt-20 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white hover:outline-dark dark:hover:bg-gray-700 group">
+                        <span class="ml-3">HOME</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/chat" class="flex items-center p-2 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white hover:outline-dark dark:hover:bg-gray-700 group">
+                        <span class="ml-3">AI CHAT</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/get-tokens" class="flex items-center p-2 text-white font-normal rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                      <span class="ml-3">GET TOKENS</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/news" class="flex items-center p-2 text-base font-normal text-white rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                        <span class="ml-3">NEWS</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/stocks" class="flex items-center p-2 text-base font-normal text-white rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                        <span class="ml-3">STOCKS</span>
+                    </a>
+                </li>
+            </ul>
+            <ul class="pt-5 mt-5 space-y-2 border-t border-gray-200 dark:border-gray-700">
+                <li>
+                    <a href="/login" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">                                
+                        <span class="ml-3">LOGIN</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/account-settings" class="flex items-center p-2 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white dark:hover:bg-gray-700 group">                                
+                        <span class="ml-3">ACCOUNT</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/contact" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">
+                        <span class="ml-3">CONTACT US</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/disclaimers" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">                                
+                        <span class="ml-3">TERMS OF USE</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <section class="dark:bg-gray-900 p-3" style="background-color: white; min-width: 900px;">
+        <div class="mx-auto min-w-screen min-h-screen py-6 lg:px-12">
+            <div class="bg-white dark:bg-gray-800">
+                <div class="overflow-x-auto mt-20 mb-5 bg-white" style="background-color: white">
+                    <div class="w-full md:w-1/2">      
+                        
+                        <div class="flex flex-wrap items-center justify-start">
+                                
+                            <!-- Load All Button -->
+                            <div class="p-2 text-sm md:text-md text-black focus:outline-none">
+                                <button id="load-all" class="md:px-6 py-2 border rounded-md text-white hover:bg-green-600 small-screen-padding" style="background-color: #2E4543;">
+                                  ALL STOCKS
+                                </button>
+                            </div>
+                            
+                            <!-- Filter Dropdown -->
+                            <button id="dropdownDefault" data-dropdown-toggle="dropdown" class="flex items-center text-sm md:text-md whitespace-nowrap md:px-6 px-4 py-2 border rounded-md z-80 text-white hover:bg-green-600 small-screen-padding-dropdown" style="background-color: #2E4543;" type="button">
+                                FILTER
+                                <svg class="w-4 h-4 ml-2" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            
+                            <div id="dropdown" class="z-10 hidden w-96 max-h-60 overflow-y-auto p-3 bg-white rounded-lg shadow dark:bg-gray-700">                                               
+    
+                            <!-- Search Bar -->
+                            <form class="flex items-center">
+                                <label for="simple-search" class="sr-only">Search</label>
+                                <div class="relative w-full">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                        <svg aria-hidden="true" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <input type="text" id="simple-search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Search" required="">
+                                </div>
+                            </form>
+
+                            <div class="flex items-center justify-start">      
+                                <!-- Submit Button -->
+                                <div class="p-2 text-sm text-black focus:outline-none">
+                                    <button id="submit" style="background-color: #2E4543" class="px-3 py-1 border rounded-md text-white hover:bg-green-600">SUBMIT</button>
+                                </div>
+
+                                <!-- Select All Button -->
+                                <div class="p-2 text-sm text-black focus:outline-none">
+                                    <button id="select-all" style="background-color: #2E4543" class="px-3 py-1 border rounded-md text-white hover:bg-green-600">SELECT ALL</button>
+                                </div>
+
+                                <!-- Clear All Button -->
+                                <div class="p-2 text-sm text-black focus:outline-none">
+                                    <button id="clearSelections" style="background-color: #2E4543" class="px-3 py-1 border rounded-md text-white hover:bg-green-600">CLEAR ALL</button>
+                                </div>
+                            </div>
+
+                            <!-- Category Drop Down -->
+                            <select id="categorySelect" class="mb-2 w-full text-sm border p-1 border-gray-300 rounded-lg focus:outline-none focus:border-primary-500">
+                                <!-- Drop down items will display here -->
+                            </select> 
+
+                            <!-- List of Stocks -->
+                            <ul id="stockList" class="space-y-2 text-sm" aria-labelledby="dropdownDefault">
+                                <!-- Dynamic stock items with checkboxes will be populated here -->
+                            </ul>                              
+                        </div>
+
+                        <!-- Clear Table Button -->
+                        <div class="p-2 text-sm md:text-md text-black focus:outline-none">
+                            <button id="tableReset" style="background-color: #2E4543" class="md:px-5 px-4 py-2 border rounded-md text-white hover:bg-green-600 small-screen-padding">
+                                TABLE RESET
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Load More Button -->
+            <div class="fixed bottom-16 left-1/2 transform text-sm md:text-md -translate-x-1/2 z-20 text-center">
+                <button id="load-more" style="background-color: #2E4543" class="hidden px-5 py-2 border rounded-md text-white hover:bg-green-600">LOAD MORE</button>
+            </div> 
+            
+            <!-- Load More Category Button -->
+            <div class="fixed bottom-16 left-1/2 transform text-sm md:text-md -translate-x-1/2 z-20 text-center">
+                <button id="load-more-category" style="background-color: #2E4543" class="hidden px-5 py-2 border rounded-md text-white hover:bg-green-600">LOAD MORE</button>
+            </div>
+
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">Symbol</th>
+                        <th scope="col" class="px-4 py-3">Date</th>
+                        <th scope="col" class="px-4 py-3">Open</th>
+                        <th scope="col" class="px-4 py-3">High</th>
+                        <th scope="col" class="px-4 py-3">Low</th>
+                        <th scope="col" class="px-4 py-3">Close</th>
+                        <th scope="col" class="px-4 py-3">Previous Close</th>
+                        <th scope="col" class="px-4 py-3">Change</th>
+                        <th scope="col" class="px-4 py-3">Percent Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Stock data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </section> 
+    <!-- JavaScript for interactive components -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            var sidebar = document.getElementById('default-sidebar');
+            var toggleButton = document.getElementById('sidebarToggle'); 
+            var body = document.body;
+        
+            // Function to toggle sidebar
+            function toggleSidebar() {
+                console.log('Sidebar toggle clicked');
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebar.classList.add('translate-x-0');
+                    setTimeout(() => { overlay.classList.remove('opacity-0'); }, 20); // Delay for CSS transition
+                    body.classList.add('blur-mode');
+                } else {
+                    sidebar.classList.remove('translate-x-0');
+                    sidebar.classList.add('-translate-x-full');
+                    setTimeout(() => { overlay.classList.add('hidden'); }, 1000); // Match duration of transition
+                    body.classList.remove('blur-mode');
+                }
+            }
+        
+            // Event listener for the toggle button
+            toggleButton.addEventListener('click', toggleSidebar); 
+            
+            // Event listener for clicking outside the sidebar
+            document.addEventListener('click', function(event) {
+                var isClickInsideSidebar = sidebar.contains(event.target) || toggleButton.contains(event.target);
+                var isSidebarOpen = sidebar.classList.contains('translate-x-0');
+
+                if (!isClickInsideSidebar && isSidebarOpen) {
+                    toggleSidebar();
+                }
+            });
+            
+        });
+    </script> 
+    <script>
+        let startIndex = 0;
+        const limit = 30; // Number of stocks to fetch per request
+        const DOW_30_SYMBOLS = [
+                'AAPL', 'AMGN', 'CRM', 'GS', 'HON', 'NKE', 'MSFT', 'V', 'BA', 'CAT', 
+                'CVX', 'DIS', 'HD', 'JNJ', 'MCD', 'MMM', 'PG', 'TRV', 'UNH', 'VZ', 
+                'WBA', 'WMT', 'AXP', 'IBM', 'JPM', 'KO', 'MRK', 'DOW', 'CSCO', 'INTC'
+        ];
+    
+        document.addEventListener('DOMContentLoaded', (event) => {
+            populateStockDropdown();
+            checkAuthentication();
+        });
+
+          // Add event listener to the "Load All" button
+        document.getElementById('load-all').addEventListener('click', () => {
+            fetchAndDisplayStockData(startIndex);
+            displayAllStocks();
+        });
+    
+        // Add event listener to the "Load More" button
+        document.getElementById('load-more').addEventListener('click', () => {
+            startIndex += limit;
+            fetchAndDisplayStockData(startIndex);
+        });
+
+        document.getElementById('load-more-category').addEventListener('click', () => {
+            startIndex += limit; // Increment startIndex by the limit
+            submitSelectedStocks(startIndex);
+        });
+
+        document.getElementById('select-all').addEventListener('click', function() {
+            selectAllStocks();
+        });
+
+        document.getElementById('categorySelect').addEventListener('change', function(event) {
+            const selectedCategory = event.target.value;
+            filterStocksByCategory(selectedCategory);
+        });
+
+        document.getElementById('simple-search').addEventListener('input', function(event) {
+            const searchValue = event.target.value.toLowerCase();
+            filterStocksByName(searchValue);
+        });
+
+        // Modify the event listener for the dropdown button
+        document.getElementById('dropdownDefault').addEventListener('click', async () => {
+            populateStockDropdown();
+            displayAllStocks();
+            
+            const dropdown = document.getElementById('dropdown');
+            if (dropdown.classList.contains('hidden')) {
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('tableReset').addEventListener('click', function() {
+            const tableBody = document.querySelector('table tbody');
+            tableBody.innerHTML = ''; // Clears the table body
+
+            // Hide both Load More buttons and reset startIndex
+            toggleLoadMoreButton(false);
+            const loadMoreCategoryButton = document.getElementById('load-more-category');
+            loadMoreCategoryButton.style.display = 'none';
+            
+            // Reset startIndex to 0
+            startIndex = 0;
+        });
+
+        document.getElementById('submit').addEventListener('click', function(event) {
+            event.preventDefault(); 
+            const selectedStocks = getSelectedStocks();
+
+            // Check if stocks are selected
+            if (selectedStocks.length > 0) {
+                startIndex = 0; // Reset startIndex for new data
+                submitSelectedStocks(startIndex);
+                const dropdown = document.getElementById('dropdown');
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('clearSelections').addEventListener('click', function() {
+            // Reset category select to the default option
+            document.getElementById('categorySelect').value = '';
+
+            // Clear the search field
+            const searchInput = document.getElementById('simple-search');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+
+            // Uncheck all checkboxes
+            const checkboxes = document.querySelectorAll('#stockList input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+
+            // Reset the display of all stock items
+            const stockItems = document.querySelectorAll('#stockList li');
+            stockItems.forEach(item => {
+                item.style.display = '';
+            });
+        });
+
+        function toggleLoadMoreButton(show) {
+            const loadMoreButton = document.getElementById('load-more');
+            loadMoreButton.style.display = show ? 'block' : 'none';
+        }
+
+        function toggleLoadMoreCategoryButton(show) {
+            const loadMoreCategoryButton = document.getElementById('load-more-category');
+            loadMoreCategoryButton.style.display = show ? 'block' : 'none';
+        }
+    
+        function fetchAndDisplayStockData(startIndex) {
+            toggleSpinner(true); // Show the spinner before starting the fetch request
+            toggleLoadMoreButton(false);
+            fetch(`/stock-data?start=${startIndex}&limit=${limit}`)
+                .then(response => response.json())
+                .then(bucketData => {
+                    const stockTableBody = document.querySelector('table tbody');
+                    if (bucketData.status === 'error') {
+                        stockTableBody.innerHTML = `<tr><td colspan="9" class="text-left pl:10 ml:10 md:text-center py-3">${bucketData.message}</td></tr>`;
+                        toggleLoadMoreButton(false);
+                        toggleLoadMoreCategoryButton(false);
+                    } else {
+                        const newRows = createStockTableRows(bucketData);
+                        stockTableBody.insertAdjacentHTML('beforeend', newRows);
+                        toggleLoadMoreButton(true);
+                    }
+                    toggleSpinner(false); // Hide the spinner after processing the response
+                })
+                .catch(error => {
+                    console.error('Error fetching stock data:', error);
+                    toggleSpinner(false); 
+                    toggleLoadMoreButton(true);
+                });
+        }
+
+        function updateLoadMoreButtonVisibility() {
+            const stockTableBody = document.querySelector('table tbody');
+            const loadMoreButton = document.getElementById('load-more');
+            
+            // Check if there are any rows in the stock table
+            if (stockTableBody && stockTableBody.rows.length > 0) {
+                loadMoreButton.style.display = 'block'; // Show the button
+            } else {
+                loadMoreButton.style.display = 'none'; // Hide the button
+            }
+        }
+
+        function checkAuthentication() {
+            fetch('/check-login-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({}) // Empty body, just checking login status
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(({ status, body }) => {
+                if (status !== 200) {
+                    // User is not logged in, display the message
+                    const stockTableBody = document.querySelector('table tbody');
+                    stockTableBody.innerHTML = `<tr><td colspan="9" class="text-left pl-4 md:text-center py-3">${body.message}</td></tr>`;
+                    
+                    const loadAllButton = document.getElementById('load-all');
+                    const dropdownDefault = document.getElementById('dropdownDefault');
+                    const tableReset = document.getElementById('tableReset');
+                    loadAllButton.disabled = true; 
+                    dropdownDefault.disabled = true;
+                    tableReset.disabled = true;
+                }else {
+                    // User is logged in, ensure the button is enabled            
+                    const loadAllButton = document.getElementById('load-all');
+                    const dropdownDefault = document.getElementById('dropdownDefault');
+                    const tableReset = document.getElementById('tableReset');
+                    loadAllButton.disabled = false;
+                    dropdownDefault.disabled = false;
+                    tableReset.disabled = false;
+                }
+            })
+            .catch((error) => {
+                // Handle the error appropriately
+                console.error('Error:', error);
+                const loadAllButton = document.getElementById('load-all');
+                const dropdownDefault = document.getElementById('dropdownDefault');
+                const tableReset = document.getElementById('tableReset');
+                loadAllButton.disabled = true;
+                dropdownDefault.disabled = true;
+                tableReset.disabled = true;
+            });
+        }
+
+        function populateStockDropdown() {
+            const categorySelect = document.getElementById('categorySelect');
+            // Clear existing options first
+            categorySelect.innerHTML = '';
+
+            // Add a placeholder option
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = 'Categories';
+            placeholderOption.disabled = true;  // Optional: make it non-selectable
+            placeholderOption.selected = true;  // Set as the default selected option
+            categorySelect.appendChild(placeholderOption);
+
+            const dailyPickOption = document.createElement('option');
+            dailyPickOption.value = 'Daily Pick';
+            dailyPickOption.textContent = 'Daily Pick';
+            categorySelect.appendChild(dailyPickOption);
+
+            const dow30jOption = document.createElement('option');
+            dow30jOption.value = 'DOW30J';
+            dow30jOption.textContent = 'DOW30J';
+            categorySelect.appendChild(dow30jOption);
+
+            // Fetch and populate categories
+            fetch('/get-stocks')
+                .then(response => response.json())
+                .then(stocks => {
+                    const uniqueCategories = new Set(stocks.map(stock => stock.industry));
+                    
+                    uniqueCategories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category;
+                        option.textContent = category;
+                        categorySelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching stock data:', error);
+                    // Handle error appropriately
+                });
+        }
+
+        function filterDOW30JStocks() {
+            const stockItems = document.querySelectorAll('#stockList li');
+            stockItems.forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                const label = item.querySelector('label').textContent;
+                const stockSymbol = label.split(' ')[0];
+                const isDOW30JStock = DOW_30_SYMBOLS.includes(stockSymbol);
+                
+                item.style.display = isDOW30JStock ? '' : 'none';
+            });
+        }
+
+        function filterDailyPickStocks() {
+            // Fetch the daily top 30 stocks from the Flask backend
+            document.getElementById('submit').disabled = true;
+            fetch('/daily-top-stocks')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(dailyPickStocks => {
+                    // Check the boxes of 'Daily Pick' stocks and filter the display
+                    const stockItems = document.querySelectorAll('#stockList li');
+                    document.getElementById('categorySelect').value = 'Daily Pick';
+
+                    stockItems.forEach(item => {
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        const label = item.querySelector('label').textContent;
+                        const stockSymbol = label.split(' ')[0]; 
+                        const isDailyPick = dailyPickStocks.includes(stockSymbol);
+                        
+                        item.style.display = isDailyPick ? '' : 'none';
+                    });
+                    document.getElementById('submit').disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error fetching daily pick stocks:', error);
+                });
+        }
+
+        function displayAllStocks() {
+            fetch('/get-stocks')
+                .then(response => response.json())
+                .then(stocks => {
+                    const stockList = document.getElementById('stockList');
+                    stockList.innerHTML = ''; // Clear existing list
+
+                    stocks.forEach((stock, index) => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'flex items-center';
+                        listItem.dataset.category = stock.industry;
+
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = 'stock-' + index;
+                        checkbox.value = stock.index;
+                        checkbox.className = 'w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500';
+
+                        const label = document.createElement('label');
+                        label.htmlFor = 'stock-' + index;
+                        label.className = 'ml-2 text-sm font-medium text-gray-900 dark:text-gray-100';
+                        label.textContent = `${stock.index} (${stock.company})`;
+
+                        listItem.appendChild(checkbox);
+                        listItem.appendChild(label);
+                        stockList.appendChild(listItem);
+                    });
+                })
+                .catch(error => console.error('Error fetching stock data:', error));
+        }
+
+        function getSelectedStocks() {
+            const checkboxes = document.querySelectorAll('#stockList input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(checkbox => {
+                const label = checkbox.nextSibling.textContent;
+                return {
+                    symbol: checkbox.value,
+                    name: label.substring(0, label.indexOf('(')).trim()
+                };
+            });
+        }
+
+        async function selectAllStocks() {
+            const selectedCategory = document.getElementById('categorySelect').value;
+            console.log("Selected Category:", selectedCategory); // Debug selected category
+
+            // Select all checkboxes in the standard way for general categories
+            if (selectedCategory !== 'Daily Pick' && selectedCategory !== 'DOW30J') {
+                const generalCheckboxes = document.querySelectorAll('#stockList input[type="checkbox"]');
+                generalCheckboxes.forEach(checkbox => {
+                    if (checkbox.parentElement.style.display !== 'none') {
+                        checkbox.checked = true;
+                    }
+                });
+            }
+
+            // Handle 'Daily Pick' category
+            if (selectedCategory === 'Daily Pick') {
+                try {
+                    const response = await fetch('/daily-top-stocks');
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const dailyPickStocks = await response.json();      
+                    const stockItems = document.querySelectorAll('#stockList li');
+                    stockItems.forEach(item => {
+                        const label = item.querySelector('label').textContent;
+                        const stockSymbol = label.split(' ')[0];
+                        const isDailyPick = dailyPickStocks.includes(stockSymbol);
+                        
+                        if (isDailyPick) {
+                            const checkbox = item.querySelector('input[type="checkbox"]');
+                            checkbox.checked = true;
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error fetching daily pick stocks:', error);
+                }
+            }
+
+            // Handle 'DOW30J' category
+            if (selectedCategory === 'DOW30J') {
+                const stockItems = document.querySelectorAll('#stockList li');
+                stockItems.forEach(item => {
+                    const label = item.querySelector('label').textContent;
+                    const stockSymbol = label.split(' ')[0]; 
+                    const isDOW30JStock = DOW_30_SYMBOLS.includes(stockSymbol);
+                    
+                    if (isDOW30JStock) {
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        checkbox.checked = true;
+                    }
+                });
+            }
+        }
+
+        function submitSelectedStocks(startIndex) {
+            const selectedStocks = getSelectedStocks();
+            const limit = 30;
+            toggleSpinner(true);
+            if (selectedStocks.length > 0) {
+                const requestData = {
+                    selectedStocks: selectedStocks,
+                    start: startIndex,
+                    limit: limit
+                };
+                toggleLoadMoreCategoryButton(false);  
+                fetch('/specific-stock-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                .then(({ status, body }) => {
+                    if (status !== 200) {
+                        const stockTableBody = document.querySelector('table tbody');
+                        stockTableBody.innerHTML = `<tr><td colspan="9" class="text-left md:text-center py-3">${body.message}</td></tr>`;
+                        toggleLoadMoreCategoryButton(false);
+                    } else {
+                        const newRows = createStockTableRows(body);
+                        const stockTableBody = document.querySelector('table tbody');
+                        stockTableBody.insertAdjacentHTML('beforeend', newRows);
+                        const bodyLength = Object.keys(body).length;
+                        toggleLoadMoreCategoryButton(bodyLength >= limit);
+                    }
+                    toggleSpinner(false);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    toggleSpinner(false);
+                    document.getElementById('load-more-category').style.display = 'none'; // Keep Load More button hidden in case of error
+                });
+            } else {
+                console.log("No stocks selected");
+            }
+        }
+
+        function filterStocksByCategory(selectedCategory) {
+            if (selectedCategory === 'Daily Pick') {
+                filterDailyPickStocks();
+            } else if (selectedCategory === 'DOW30J') {
+                filterDOW30JStocks(); 
+            }else {
+                const stockItems = document.querySelectorAll('#stockList li');
+                stockItems.forEach(item => {
+                    const category = item.dataset.category;
+                    item.style.display = (category === selectedCategory || selectedCategory === '') ? '' : 'none';
+                });
+            }
+        }
+
+        function filterStocksByName(searchValue) {
+            const stockItems = document.querySelectorAll('#stockList li');
+            stockItems.forEach(item => {
+                const text = item.querySelector('label').textContent.toLowerCase();
+                const isSearchMatch = text.includes(searchValue);
+                item.style.display = isSearchMatch ? '' : 'none';
+            });
+        }
+
+        function toggleSpinner(show) {
+            const spinner = document.getElementById('spinner');
+            if (show) {
+                spinner.classList.remove('hidden');
+            } else {
+                spinner.classList.add('hidden');
+            }
+        }
+    
+        function createStockTableRows(bucketData) {
+            let rows = '';
+            Object.keys(bucketData).forEach(symbol => {
+                bucketData[symbol].forEach(data => {
+                    const stockUrl = `https://www.nasdaq.com/market-activity/stocks/${symbol.toLowerCase()}`;
+                    let textColor = ''; 
+                    const percentChange = parseFloat(data["Percent Change"]);
+
+                    if (percentChange <= -1) {
+                        textColor = 'style="color: red;"';
+                    } else if (percentChange >= 1) {
+                        textColor = 'style="color: green;"';
+                    }
+
+                    rows += `
+                        <tr class="border-b dark:border-gray-700" ${textColor}>
+                            <td class="px-4 py-3">
+                                <a href="${stockUrl}" target="_blank" class="underline" style="color: inherit">${symbol}</a>
+                            </td>
+                            <td class="px-4 py-3">${data["Date"]}</td>
+                            <td class="px-4 py-3">${data["Open"]}</td>
+                            <td class="px-4 py-3">${data["High"]}</td>
+                            <td class="px-4 py-3">${data["Low"]}</td>
+                            <td class="px-4 py-3">${data["Close"]}</td>
+                            <td class="px-4 py-3">${data["Previous Close"]}</td>
+                            <td class="px-4 py-3">${data["Change"]}</td>
+                            <td class="px-4 py-3">${data["Percent Change"]}</td>
+                        </tr>`;
+                });
+            });
+            return rows;
+        }
+
+    </script>         
+</body>
+</html>

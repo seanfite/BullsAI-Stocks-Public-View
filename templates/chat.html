@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bullsai Stocks</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='bull-favicon.png') }}">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+    <style>
+        .message {
+            margin-bottom: 30px; 
+        }
+        .slow-spin {
+            animation: spin 2s linear infinite;
+        }
+        /* Keyframes for moving the gradient */
+        @keyframes moveGradient {
+            0% { gradientTransform: translateX(0%); }
+            100% { gradientTransform: translateX(100%); }
+        }
+    
+        /* Styles for the dots */
+        .dot {
+            width: .5rem; 
+            height: .5rem;
+            border-radius: 50%; 
+            margin: 0 0.25rem; 
+            background-color: #ddd; 
+            animation: colorChange 1.4s infinite ease-in-out both;
+        }
+
+        .dot:nth-child(1) { animation-delay: 0s; }
+        .dot:nth-child(2) { animation-delay: 0.4s; }
+        .dot:nth-child(3) { animation-delay: 0.8s; }
+    
+        /* Keyframes for color change effect */
+        @keyframes colorChange {
+            0%, 100% { background-color: #ddd; } 
+            50% { background-color: #555; } 
+        }
+
+        @font-face {
+            font-family: 'Gill Sans Ultra Bold';
+            src: url('static/GillSansUltraBold.otf') format('opentype');
+        }
+
+        .whitened-out {
+            opacity: .1;
+        }
+
+        .custom-hover-text:hover {
+            color: #2E4543; 
+        }
+
+        body.blur-mode::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.5); /* White with 50% opacity */
+            backdrop-filter: blur(2px);
+            z-index: 10;
+        }
+
+        @media (max-width: 640px) {
+            body.blur-mode::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: white;
+                backdrop-filter: blur(5px);
+                z-index: 10;
+            }
+
+            .modal-open {
+                background-color: rgba(255, 255, 255, 0.9); 
+            }
+        }
+
+    </style>    
+</head>
+<body style="font-family: 'Century Gothic', Arial, sans-seri; background-color: #2E4543;">
+
+    <!-- Overlay -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-80 opacity-0 hidden z-10 transition-opacity duration-1000 ease-in-out"></div>
+
+    <!-- Header -->
+    <section class="fixed top-0 z-40 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+        <div class="w-full mx-auto">
+            <div class="relative overflow-hidden shadow-md dark:bg-gray-800" style="background-color: #2E4543">                             
+                <div class="flex items-center justify-between p-4 space-y-3 sm:flex sm:space-y-0 sm:space-x-4"> 
+                    
+                    <!-- Title -->  
+                    <div style="font-family: 'Gill Sans Ultra Bold', sans-serif; font-size: 40px;";>
+                        <h5 class="color-white text-white ml-1">
+                            <span style="color: #A6A6A6;">Bulls</span>ai
+                        </h5>
+                    </div>
+
+                    <!-- Sidebar Toggle Button -->
+                    <div class="p-2 pb-3">
+                        <button id="sidebarToggle" class="text-gray-500 rounded-lg focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700">
+                            <svg class="w-6 h-6 text-white dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1 1h15M1 7h15M1 13h15"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sidebar -->
+    <aside id="default-sidebar" data-drawer-target="default-sidebar" class="drawer drawer-end fixed top-0 inset-y-0 left-0 z-30 w-72 overflow-y-auto p-4 transform -translate-x-full transition-transform duration-500 ease-in-out" aria-label="Sidenav" style="background-color: #2E4543">
+        <div class="overflow-y-auto py-5 px-3 h-full" style="background-color: #2E4543">
+            <ul class="space-y-2">
+                <li>
+                    <a href="/" class="flex items-center p-2 mt-20 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white hover:outline-dark dark:hover:bg-gray-700 group">
+                        <span class="ml-3">HOME</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/chat" class="flex items-center p-2 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white hover:outline-dark dark:hover:bg-gray-700 group">
+                        <span class="ml-3">AI CHAT</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/get-tokens" class="flex items-center p-2 text-white font-normal rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                        <span class="ml-3">GET TOKENS</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/news" class="flex items-center p-2 text-base font-normal text-white rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                        <span class="ml-3">NEWS</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/stocks" class="flex items-center p-2 text-base font-normal text-white rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                        <span class="ml-3">STOCKS</span>
+                    </a>
+                </li>
+            </ul>
+            <ul class="pt-5 mt-5 space-y-2 border-t border-gray-200 dark:border-gray-700">
+                <li>
+                    <a href="/login" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">                                
+                        <span class="ml-3">LOGIN</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/account-settings" class="flex items-center p-2 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white dark:hover:bg-gray-700 group">                                
+                        <span class="ml-3">ACCOUNT</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/contact" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">
+                        <span class="ml-3">CONTACT US</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/disclaimers" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">                                
+                        <span class="ml-3">TERMS OF USE</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Main Chat Container -->
+    <main class="pt-8 pb-16 lg:pt-16 lg:pb-24 bg-white dark:bg-gray-900 antialiased">
+        <div class="flex justify-between px-4 mx-auto max-w-screen-xl ">
+            <article class="mx-auto w-full max-w-2xl format format-sm sm:format-base lg:format-lg format-blue dark:format-invert">
+                <header class="mb-4 mt-20 lg:mb-6 not-format">
+                    <div class="w-full max-w-4xl mx-auto">
+                        <div class="flex items-center justify-between w-full">
+        
+                            <!-- How To Button -->
+                            <div class="flex justify-center">
+                                <button id="readProductButton" data-modal-target="readProductModal" data-modal-toggle="readProductModal" class="block text-black text-md md:text-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg p-1 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800" type="button">
+                                GUIDE
+                                </button>
+                            </div>
+        
+                            <!-- DOW 30 Dropdown -->
+                            <div class="flex items-center justify-center">
+                                <div class="flex items-center justify-center">
+                                    <button id="dropdownDefault" data-dropdown-toggle="dropdown"
+                                    class="text-black text-md md:text-lg p-1 bg-grey-300 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg py-2.5 text-center inline-flex items-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+                                    type="button">
+                                    S&P500 STOCKS
+                                    <svg class="w-4 h-4 ml-2" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                    </button>                          
+                                    <div id="dropdown" class="z-10 hidden w-96 max-h-60 overflow-y-auto p-3 bg-white rounded-lg shadow dark:bg-gray-700">                                    
+                                        <div class="flex justify-between">
+                                            <!-- Daily Pick Button -->
+                                            <button id="dailyPick" style="font-size: 13px;" class="mt-2 p-2 text-black focus:outline-none">
+                                                DAILY PICK
+                                            </button> 
+                                             <!-- General Question Button -->
+                                             <button id="generalQuestion" style="font-size: 13px;" class="mt-2 p-2 text-black focus:outline-none">
+                                                GENERAL QUESTION
+                                            </button> 
+                                            <!-- Clear Selections Button -->
+                                            <button id="clearSelections" style="font-size: 13px;" class="mt-2 p-2 text-black focus:outline-none">
+                                                CLEAR ALL
+                                            </button>   
+                                        </div>   
+                                                             
+                                        <!-- Search Bar -->
+                                        <form class="flex items-center mb-3">
+                                            <label for="stockSearch" class="sr-only">Search</label>
+                                            <div class="relative w-full">
+                                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                                    <svg aria-hidden="true" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <input type="text" id="stockSearch" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Search" required="">
+                                            </div>
+                                        </form>
+
+                                        <!-- Category Drop Down -->
+                                        <select id="categorySelect" class="mb-2 w-full text-sm border p-1 border-gray-300 rounded-lg focus:outline-none focus:border-primary-500">
+                                            <!-- Drop down items will display here -->
+                                        </select> 
+
+                                        <!-- List of Stocks -->
+                                        <ul id="stockList" class="space-y-2 text-sm" aria-labelledby="dropdownDefault">
+                                            <!-- Dynamic stock items with checkboxes will be populated here -->
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                             <!-- Token Count -->
+                             <div class="p-1 text-md md:text-lg">
+                                <span>TOKENS: </span>
+                                <span id="token-count"></span>
+                            </div>
+
+                        </div>
+                    </div>
+                </header>
+
+                <section class="bg-white">
+
+                    <!-- Chat Container -->
+                    <div class="flex justify-between items-center mb-6">
+                        <div id="chat-history" class="w-full max-w-4xl p-4 bg-white mb-4 rounded h-80 overflow-auto">
+                        <!-- Chat History Appends Here -->
+                        </div>
+                    </div>
+
+                    <!-- Input Field and Submit Button -->
+                    <div class="w-full max-w-4xl flex border rounded items-center">               
+                        <label for="user-input" class="block text-sm font-medium text-gray-900 dark:text-white sr-only">Ask a Question</label>
+                        <input type="text" id="user-input" placeholder="ASK A QUESTION..." class="block w-full p-3 text-gray-900 border-gray-300 rounded-l-lg bg-gray-50 sm:text-md focus:none focus:none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">                
+                       
+                        <button id="send-button" class="p-3 rounded-r-lg ml-1 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" style="background-color: #2E4543; color: white; font-weight:100;">
+                            GO
+                        </button>       
+                    </div>
+
+                    <!-- Loading Spinner and No Token Message -->
+                    <form class="mb-6">
+                        <div class="py-2 px-4 mb-4 bg-white rounded-lg rounded-t-lg">
+                            <div>
+                                <div class="flex justify-center">
+                                    <div id="loading-spinner" class="flex items-center justify-center mt-3 mb-4" style="z-index: 100; display: none;">
+                                        <div role="status" class="flex">
+                                            <span class="dot bg-gray-900 dark:bg-gray-700"></span>
+                                            <span class="dot bg-gray-900 dark:bg-gray-700"></span>
+                                            <span class="dot bg-gray-900 dark:bg-gray-700"></span>
+                                            <span class="sr-only">Loading...</span>
+                                        </div>                
+                                    </div> 
+                                    <!-- No Tokens Message -->
+                                    <div class="flex justify-center">
+                                        <div id="no-tokens-message" class="hidden p-2 mb-4 text-sm text-red-800 rounded-lg dark:bg-gray-800 dark:text-blue-400" role="alert">
+                                            <span class="font-small"></span> PURCHASE TOKENS TO SUBMIT QUESTIONS
+                                    </div>
+                                    <!-- Login To Submit Questions Message -->
+                                    <div class="flex justify-center">
+                                        <div id="no-login-message" class="hidden p-2 mb-4 text-sm text-red-800 rounded-lg dark:bg-gray-800 dark:text-blue-400" role="alert">
+                                            <span class="font-small">LOGIN TO SUBMIT QUESTIONS</span>
+                                        </div>
+                                    </div>
+                                    <!-- Login To Submit Questions Message -->
+                                    <div class="flex justify-center">
+                                        <div id="reminder" style="font-size: 15px;" class="hidden p-2 mb-4 text-black rounded-lg dark:bg-gray-800 dark:text-blue-400" role="alert">
+                                            <!-- <span class="font-small">REMEMBER TO SELECT FROM<br>S&P500 STOCKS</span> -->
+                                            <div class="font-small text-center">
+                                                REMEMBER TO SELECT FROM<br>S&P500 STOCKS
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+            </article>
+        </div>
+    </main>
+
+    <div id="readProductModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-24 ml-24 md:top-12 bottom-5 right-0 md:right-12 z-50 justify-center items-center w-full md:inset-0 h-modal md:h-full">
+        <div class="relative w-full md:w-3/4 top-72 md:top-2 md:mt-12 md:mr-48">               
+            <div class="relative p-2 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">   
+                <div class="flex justify-between mb-4 pr-5 md:mr-12 rounded-t sm:mb-5">
+                    <div class="text-sm text-gray-900 dark:text-white">
+                        </div>
+                    <div>
+                        <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg md:mr-12 text-sm p-1.5 inline-flex dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="readProductModal">
+                            <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                            <span class="sr-only">Close model</span>
+                        </button>
+                    </div>       
+                    <dl class="mt-12 md:ml-15 md:mr-20">                           
+                        <dt class="mb-5 font-bold text-sm leading-none text-gray-900 dark:text-white">STEP 1: LOGIN/SIGN-UP</dt>   
+                        <dt class="mb-5 font-bold text-sm leading-none text-gray-900 dark:text-white">STEP 2: PURCHASE TOKENS</dt>
+                        <dt class="mb-2 font-bold text-sm  leading-none text-gray-900 dark:text-white">STEP 3: SELECT UP TO 20 STOCK INDEXES FROM S&P500 STOCKS DROPDOWN </dt> 
+                        <dd style="font-size: 13px" class="ml-5 mb-4 font-light text-gray-500 sm:mb-0 dark:text-gray-400">IT'S IMPORTANT TO REMEMBER THAT WITHOUT SELECTING ANY STOCKS, OUR SYSTEM PRIMARILY FOCUSES ON INCORPORATING CURRENT NEWS INTO OUR ANALYSIS WHICH IS GREAT FOR GENERAL QUESTIONS. HOWEVER, ONCE YOU CHOOSE SPECIFIC STOCKS, WE ALSO INCLUDE HISTORICAL DATA IN OUR EVALUATION PROCESS.</dd>                 
+                        <dt class="mb-4 mt-5 font-bold text-sm  leading-none text-gray-900 dark:text-white">STEP 4: ASK QUESTIONS AND FORM A GAMEPLAN</dt>
+                        <dd class="ml-5 mb-0 font-bold text-sm text-black sm:mb-0 dark:text-gray-400">START GENERAL</dd>
+                        <li style="font-size: 13px" class="ml-5 mb-4 font-light text-gray-500 sm:mb-0 dark:text-gray-400">WHAT SHOULD I LOOK INTO?</li>
+                        <dd class="ml-5 mb-0 font-bold text-sm text-black sm:mb-0 dark:text-gray-400">ASK ABOUT THE DAILY PICK</dd>
+                        <dd style="font-size: 13px" class="ml-5 mb-4 font-light text-gray-500 sm:mb-0 dark:text-gray-400">GENERATED WITH OUR PATENETED PICK ALGORITHM AND UPDATED DAILY WITH STOCKS WE THINK WILL PERFORM</dd>
+                        <dd class="ml-5 mb-0 font-bold text-sm text-black sm:mb-0 dark:text-gray-400">SELECT STOCKS AND FOCUS YOUR QUESTIONS</dd>
+                        <li style="font-size: 13px" class="ml-5 mb-0 font-light text-gray-500 sm:mb-0 dark:text-gray-400">WHO ARE THE TOP PERFORMERS?</li>  
+                        <li style="font-size: 13px" class="ml-5 mb-4 font-light text-gray-500 sm:mb-5 dark:text-gray-400">HOW IS AMZN STOCK DOING TODAY?</li>
+                        <dt class="mb-2 font-bold text-sm  leading-none text-gray-900 dark:text-white">STEP 5: TAKE YOUR GAMEPLAN AND CONTINUE YOUR RESEARCH ON OUR STOCKS PAGE</dt>
+                        <dt class="mb-2 mt-5 font-bold text-sm leading-none text-gray-900 dark:text-white">REMINDERS</dt>
+                        <div>
+                            <ul style="font-size: 13px" class="list-disc ml-8 mr-5">
+                                <li class="mb-0 font-light text-gray-500 sm:mb-0 dark:text-gray-400">WE ONLY HAVE DATA FOR THE S&P 500 STOCK INDEXES.</li>
+                                <li class="mb-0 font-light text-gray-500 sm:mb-0 dark:text-gray-400">SELECT UP TO 20 STOCKS AT A TIME.</li>
+                                <li class="mb-0 font-light text-gray-500 sm:mb-0 dark:text-gray-400">THE DAILY PICK IS ONLY AVAILABLE IF YOU LOGIN.</li>
+                                <li class="mb-0 font-light text-gray-500 sm:mb-0 dark:text-gray-400">ASK QUESTIONS PERTAINING TO THE STOCKS YOU HAVE SELECTED.</li>
+                                <li class="mb-0 font-light text-gray-500 sm:mb-0 dark:text-gray-400">EXPECT A 20-50 SECOND DELAY BEFORE RECIEVING A RESPONSE TO YOUR QUESTION. THE MORE STOCKS SELECTED, THE LONGER THE DELAY.</li>
+                                <li class="mb-0 font-light text-gray-500 sm:mb-0 dark:text-gray-400">REMEMBER, THIS IS A RESEARCH TOOL. THIS SERVICE IS NOT FINANCIAL ADVICE. THE ACCURACY OF AI-GENERATED INSIGHTS CAN VARY AND THE LIABILTY FOR INVESTMENT DECISIONS RESTS WITH YOU.</li>
+                            </ul>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for interactive components -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        var sidebar = document.getElementById('default-sidebar');
+        var toggleButton = document.getElementById('sidebarToggle'); 
+        var overlay = document.getElementById('overlay');
+        var body = document.body;
+        var readProductModal = document.getElementById('readProductModal'); // Get the readProductButton
+        var readProductButton = document.getElementById('readProductButton'); // Get the readProductButton
+    
+        // Function to toggle sidebar
+        function toggleSidebar() {
+            console.log('Sidebar toggle clicked');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                setTimeout(() => { overlay.classList.remove('opacity-0'); }, 20); // Delay for CSS transition
+                body.classList.add('blur-mode');
+            } else {
+                sidebar.classList.remove('translate-x-0');
+                sidebar.classList.add('-translate-x-full');
+                setTimeout(() => { overlay.classList.add('hidden'); }, 1000); // Match duration of transition
+                body.classList.remove('blur-mode');
+            }
+        }
+
+        function applyBlurEffect() {
+            console.log('Applying blur effect');
+            overlay.classList.remove('hidden', 'opacity-60'); // Show overlay
+            body.classList.add('blur-mode'); // Add blur effect to body
+        }
+
+        // Function to remove blur effect
+        function removeBlurEffect() {
+            console.log('Removing blur effect');
+            overlay.classList.add('hidden', 'opacity-0');
+            body.classList.remove('blur-mode');
+        }
+    
+        // Event listener for the toggle button
+        toggleButton.addEventListener('click', toggleSidebar); 
+        
+        // Event listener for clicking outside the sidebar
+        document.addEventListener('click', function(event) {
+            var isClickInsideSidebar = sidebar.contains(event.target) || toggleButton.contains(event.target);
+            var isSidebarOpen = sidebar.classList.contains('translate-x-0');
+
+            if (!isClickInsideSidebar && isSidebarOpen) {
+                toggleSidebar();
+            }
+        });
+        
+        // document.getElementById('readProductButton').click();
+        readProductModal.addEventListener('click', removeBlurEffect);
+        readProductButton.addEventListener('click', applyBlurEffect);
+         
+        // Event listener for the overlay
+        overlay.addEventListener('click', removeBlurEffect);
+
+    });
+    </script>  
+    <script>
+        let selectedStockIndexes = [];
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            // Firebase configuration setup
+            const firebaseConfig = {
+                apiKey: "",
+                authDomain: "",
+                projectId: "",
+                storageBucket: "",
+                messagingSenderId: "",
+                appId: "",
+                measurementId: ""
+            };
+            
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+
+            // Variable declarations
+            const db = firebase.firestore();
+            const user = firebase.auth().currentUser;
+            const chatButton = document.getElementById('send-button');
+            const chatInput = document.getElementById('user-input');
+            const chatHistory = document.getElementById('chat-history');
+            const loadingSpinner = document.getElementById('loading-spinner');  
+            const noTokensMessageElement = document.getElementById('no-tokens-message'); 
+            const noLoginMessageElement = document.getElementById('no-login-message'); 
+            const reminderElement = document.getElementById('reminder'); 
+            let isGeneralQuestionSelected = false;
+
+            const DOW_30_SYMBOLS = [
+                'AAPL', 'AMGN', 'CRM', 'GS', 'HON', 'NKE', 'MSFT', 'V', 'BA', 'CAT', 
+                'CVX', 'DIS', 'HD', 'JNJ', 'MCD', 'MMM', 'PG', 'TRV', 'UNH', 'VZ', 
+                'WBA', 'WMT', 'AXP', 'IBM', 'JPM', 'KO', 'MRK', 'DOW', 'CSCO', 'INTC'
+            ];
+
+            // Set default token count
+            let tokenCount = 0;
+
+            updateTokenDisplay();
+
+            noTokensMessageElement.style.display = 'none';
+
+            // Check if user is logged in
+            checkLoginStatus();
+
+            document.getElementById('dailyPick').addEventListener('click', filterDailyPickStocks);
+
+            document.getElementById('stockSearch').addEventListener('input', function(event) {
+                const searchValue = event.target.value.toLowerCase();
+                filterStocksByName(searchValue);
+            });
+
+            document.getElementById('categorySelect').addEventListener('change', function(event) {
+                const selectedCategory = event.target.value;
+                filterStocksByCategory(selectedCategory);
+            });
+
+            document.getElementById('generalQuestion').addEventListener('click', function() {
+                isGeneralQuestionSelected = true;
+                // Hide all stock items and uncheck their checkboxes
+                const stockItems = document.querySelectorAll('#stockList li');
+                document.getElementById('categorySelect').value = 'general-question';
+                stockItems.forEach(item => {
+                    item.style.display = '';
+                    item.querySelector('input[type="checkbox"]').checked = false;
+                });
+            });
+
+            document.getElementById('clearSelections').addEventListener('click', function() {
+                // Reset category select to the default option
+                document.getElementById('categorySelect').value = '';
+
+                // Clear the search field
+                document.getElementById('stockSearch').value = '';
+
+                const checkboxes = document.querySelectorAll('#stockList input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+
+                // Reset the display of all stock items
+                const stockItems = document.querySelectorAll('#stockList li');
+                stockItems.forEach(item => {
+                    item.style.display = '';
+                });
+            });
+
+            // Send chat message when the "Send" button is clicked
+            chatButton.addEventListener('click', handleSubmit);
+
+            // Send chat message when Enter is pressed 
+            chatInput.addEventListener('keydown', function(event) {
+                if (event.keyCode === 13) {
+                    handleSubmit();
+                }
+            });
+
+            // Check if user exists and get their token count from Firestore
+            if(user) {
+                db.collection('users').doc(user.uid).get()
+                .then(doc => {
+                    if(doc.exists) {
+                        tokenCount = doc.data().tokens; 
+                    } 
+                })
+                .catch(error => {
+                    tokenCount = 0;
+                });
+            }
+            
+            // On login change
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (user) {
+                    // User is signed in.
+                    db.collection('users').doc(user.uid).get()
+                    .then(doc => {
+                        if(doc.exists) {
+                            tokenCount = doc.data().tokens; 
+                            updateTokenDisplay();
+                        } else {
+                            console.log('No user document found.');
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Error fetching user data:', error);
+                    });
+                } else {
+                    console.log('User is not signed in.');
+                }
+            });
+            
+            // Fetch token count on page load
+            fetch('/get-token-count')
+            .then(response => response.json())
+            .then(data => {
+                tokenCount = data.token_count;
+                updateTokenDisplay();
+            });
+
+            // Get stock data from backend
+            fetch('/get-stocks')
+            .then(response => response.json())
+            .then(stocks => {
+                const stockList = document.getElementById('stockList');
+                stockList.innerHTML = ''; // Clear existing list items
+
+                stocks.forEach((stock, index) => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'flex items-center';
+                    listItem.dataset.category = stock.industry;
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = 'stock-' + index;
+                    checkbox.value = stock.index;
+                    checkbox.className = 'w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500';
+
+                    checkbox.addEventListener('change', function() {
+                        const checkedCheckboxes = document.querySelectorAll('#stockList input[type="checkbox"]:checked');
+                        if(this.checked) {
+                            selectedStockIndexes.push(this.value);
+                        } else {
+                            selectedStockIndexes = selectedStockIndexes.filter(item => item !== this.value);
+                        }
+                        if (checkedCheckboxes.length > 20) {
+                            this.checked = false;
+                            alert('You can select up to 20 stocks only.');
+                        }
+                    });
+
+                    const label = document.createElement('label');
+                    label.htmlFor = 'stock-' + index;
+                    label.className = 'ml-2 text-sm font-medium text-gray-900 dark:text-gray-100';
+                    label.textContent = `${stock.index} (${stock.company})`;
+
+                    listItem.appendChild(checkbox);
+                    listItem.appendChild(label);
+                    stockList.appendChild(listItem);
+                });
+                populateCategories(stocks);
+            })
+            .catch(error => console.error('Error fetching stock indexes:', error));
+
+            function populateCategories(stocks) {
+                const categorySelect = document.getElementById('categorySelect');
+
+                // Add a placeholder 'Category' option
+                const defaultOption = document.createElement('option');
+                defaultOption.textContent = 'Category';
+                defaultOption.value = '';
+                defaultOption.disabled = true;  // Disable the option
+                defaultOption.selected = true;  // Set it as the selected option
+                categorySelect.appendChild(defaultOption);
+
+                const generalQuestionOption = document.createElement('option');
+                generalQuestionOption.textContent = 'General Question';
+                generalQuestionOption.value = 'general-question';
+                categorySelect.appendChild(generalQuestionOption);
+
+                // Add the 'Daily Pick' option
+                const dailyPickOption = document.createElement('option');
+                dailyPickOption.textContent = 'Daily Pick';
+                dailyPickOption.value = 'daily-pick';
+                categorySelect.appendChild(dailyPickOption);
+
+                // Add the 'Daily Pick' option
+                const DOW30JSelectionOption = document.createElement('option');
+                DOW30JSelectionOption.textContent = 'DOW30J';
+                DOW30JSelectionOption.value = 'dow30-selection';
+                categorySelect.appendChild(DOW30JSelectionOption);
+
+
+                // Extract and append unique categories
+                const categories = new Set(stocks.map(stock => stock.industry));
+                categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    categorySelect.appendChild(option);
+                });
+            }
+
+            function filterStocksByName(searchValue) {
+                const selectedCategory = document.getElementById('categorySelect').value;
+                const stockItems = document.querySelectorAll('#stockList li');
+
+                stockItems.forEach(item => {
+                    const text = item.querySelector('label').textContent.toLowerCase();
+                    const category = item.dataset.category;
+
+                    const isCategoryMatch = (selectedCategory === '' || category === selectedCategory);
+                    const isSearchMatch = text.includes(searchValue);
+
+                    item.style.display = (isCategoryMatch && isSearchMatch) ? '' : 'none';
+                });
+            }
+
+            function filterStocksByCategory(selectedCategory) {
+                if (selectedCategory === 'general-question') {
+                    // Handle 'General Question' selection
+                    isGeneralQuestionSelected = true;
+
+                    // Hide all stock items and uncheck their checkboxes
+                    const stockItems = document.querySelectorAll('#stockList li');
+                    stockItems.forEach(item => {
+                        item.style.display = '';
+                        item.querySelector('input[type="checkbox"]').checked = false;
+                    });
+                } else if (selectedCategory === 'daily-pick') {
+                    // Handle 'Daily Pick' selection
+                    filterDailyPickStocks();
+                } else if (selectedCategory === 'dow30-selection') {
+                    filterDOW30JStocks(); 
+                }else {
+                    // Reset for other categories
+                    isGeneralQuestionSelected = false; // Reset the general question flag
+                    const stockItems = document.querySelectorAll('#stockList li');
+                    stockItems.forEach(item => {
+                        const category = item.dataset.category; 
+                        item.style.display = (category === selectedCategory || selectedCategory === '') ? '' : 'none';
+                        item.querySelector('input[type="checkbox"]').checked = false;
+                    });
+                }
+            }
+
+            function filterDailyPickStocks() {
+                // Fetch the daily top 30 stocks from the Flask backend
+                fetch('/daily-top-stocks')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(dailyPickStocks => {
+                        // Check the boxes of 'Daily Pick' stocks and filter the display
+                        const stockItems = document.querySelectorAll('#stockList li');
+                        document.getElementById('categorySelect').value = 'daily-pick';
+
+                        stockItems.forEach(item => {
+                            const checkbox = item.querySelector('input[type="checkbox"]');
+                            const label = item.querySelector('label').textContent;
+                            const stockSymbol = label.split(' ')[0]; 
+                            const isDailyPick = dailyPickStocks.includes(stockSymbol);
+                            item.style.display = isDailyPick ? '' : 'none';
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching daily pick stocks:', error);
+                    });
+            }
+         
+            function filterDOW30JStocks() {
+                const stockItems = document.querySelectorAll('#stockList li');
+                stockItems.forEach(item => {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    const label = item.querySelector('label').textContent;
+                    const stockSymbol = label.split(' ')[0]; 
+                    const isDOW30JStock = DOW_30_SYMBOLS.includes(stockSymbol);
+                    item.style.display = isDOW30JStock ? '' : 'none';
+                });
+            }
+
+            // Update the displayed token count and enable/disable chat button
+            function updateTokenDisplay() {
+                const tokenCountElement = document.getElementById('token-count');
+                tokenCountElement.textContent = tokenCount;
+                chatButton.disabled = (tokenCount <= 0);
+
+                // Display or hide the no tokens message
+                if (tokenCount <= 0) {
+                    noTokensMessageElement.style.display = 'block';
+                } else {
+                    noTokensMessageElement.style.display = 'none';
+                }
+
+                // Show reminder message if user is logged in and has tokens
+                if (firebase.auth().currentUser && tokenCount > 0) {
+                    reminderElement.style.display = 'block';
+                } else {
+                    reminderElement.style.display = 'none';
+                }
+            }
+
+            // Fetch token count from the server
+            function fetchTokenCountFromServer() {
+                fetch('/get-token-count')
+                .then(response => response.json())
+                .then(data => {
+                    tokenCount = data.token_count;
+                    updateTokenDisplay();
+                })
+                .catch(error => {
+                    console.error('Error fetching token count from server:', error);
+                });
+            }
+
+            // Fetch token count for user from Firebase
+            function fetchFirebaseTokenCount() {
+                const user = firebase.auth().currentUser;
+                if(user) {
+                    db.collection('users').doc(user.uid).get()
+                    .then(doc => {
+                        if(doc.exists) {
+                            tokenCount = doc.data().tokens; 
+                        } else {
+                            console.log('No user document found.');
+                        }
+                    })
+                    .catch(error => {
+                        tokenCount = 0;
+                    });
+                }
+            }
+
+            // Poll GCS data for chat updates
+            function pollGCSData(attempts = 0) {
+                if (attempts > 35) {
+                    console.error('Failed to retrieve data after multiple attempts.');
+                    loadingSpinner.style.display = "none";
+                    return;
+                }
+                fetch('/fetch_data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        chatHistory.innerHTML += `<div class="bot-response message">${data.message}</div>`; 
+                        loadingSpinner.style.display = 'none';
+                        saveChatHistory();
+                        fetchTokenCountFromServer();
+                    } else if (data.status === "pending") {
+                        setTimeout(() => {
+                            pollGCSData(attempts + 1);
+                        }, 3000);
+                    } else if (data.status === "error") {
+                        chatHistory.innerHTML += `<div class="bot-response">There was an error processing your request.</div>`;                       
+                    }
+                })
+                .catch(error => {
+                    console.error('Error with fetch request:', error);
+                });   
+            }  
+
+            function handleSubmit() {
+                const userInput = chatInput.value.trim();
+                if(tokenCount > 0)
+                {
+                    if (userInput) {
+                            
+                        const checkedStockIndexes = Array.from(document.querySelectorAll('#stockList input[type="checkbox"]:checked'))
+                                                            .map(checkbox => checkbox.value);              
+                        chatHistory.innerHTML += `<div class="user-message message">${userInput}</div>`; 
+                        saveChatHistory();
+                        loadingSpinner.style.display = "block";
+                        reminderElement.style.display = "none"
+                      
+                        fetch('/submit', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                           
+                            body: JSON.stringify({
+                                userInput: userInput,
+                                selectedStocks: checkedStockIndexes 
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            setTimeout(pollGCSData, 9000);
+                            print("We are in timeout")
+                        })
+                        .catch(error => {
+                            chatHistory.innerHTML += `<div class="bot-response">There was an error processing your request.</div>`;
+                        });
+
+                        chatInput.value = "";
+                        chatInput.blur();
+                    }
+                }
+            }
+                    
+            // Function to check if user is logged in
+            function checkLoginStatus() {
+                fetch('/logged-in')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.logged_in) {
+                        // User is not logged in, display alert message
+                        noLoginMessageElement.style.display = 'block';
+                    }
+                    else{
+                        noLoginMessageElement.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking login status:', error);
+                });
+            }
+
+            function saveChatHistory() {
+                sessionStorage.setItem('chatHistory', chatHistory.innerHTML);
+            }
+
+            // Function to load chat history from session storage
+            function loadChatHistory() {
+                const savedChatHistory = sessionStorage.getItem('chatHistory');
+                if (savedChatHistory) {
+                    chatHistory.innerHTML = savedChatHistory;
+                }
+            }
+
+            loadChatHistory();
+        });
+    </script>
+
+</body>
+</html>

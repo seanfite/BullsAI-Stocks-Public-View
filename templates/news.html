@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bullsai Stocks</title>
+    <!-- Include Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='bull-favicon.png') }}">
+    <style>
+        .custom-hover-text:hover {
+            color: #2E4543; 
+        }
+
+        @font-face {
+            font-family: 'Gill Sans Ultra Bold';
+            src: url('static/GillSansUltraBold.otf') format('opentype');
+        }
+
+        body.blur-mode::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.5); /* White with 50% opacity */
+            backdrop-filter: blur(2px);
+            z-index: 10;
+        }
+
+        @media (max-width: 640px) {
+            body.blur-mode::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: white;
+                backdrop-filter: blur(5px);
+                z-index: 10;
+            }
+        }
+    </style>
+
+</head>
+<body style="font-family: 'Century Gothic', Arial, sans-seri;">
+
+    <!-- Overlay -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-80 opacity-0 hidden z-10 transition-opacity duration-1000 ease-in-out"></div>
+
+    <!-- Header -->
+    <section class="fixed top-0 z-40 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+        <div class="w-full mx-auto">
+            <div class="relative overflow-hidden shadow-md dark:bg-gray-800" style="background-color: #2E4543">                             
+                <div class="flex items-center justify-between p-4 space-y-3 sm:flex sm:space-y-0 sm:space-x-4"> 
+                    
+                    <!-- Title -->  
+                    <div style="font-family: 'Gill Sans Ultra Bold', sans-serif; font-size: 40px;";>
+                        <h5 class="color-white text-white ml-1">
+                            <span style="color: #A6A6A6;">Bulls</span>ai
+                        </h5>
+                    </div>
+
+                    <!-- Sidebar Toggle Button -->
+                    <div class="p-2 pb-3">
+                        <button id="sidebarToggle" class="text-gray-500 rounded-lg focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700">
+                            <svg class="w-6 h-6 text-white dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1 1h15M1 7h15M1 13h15"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sidebar -->
+    <aside id="default-sidebar" data-drawer-target="default-sidebar" class="drawer drawer-end fixed top-0 inset-y-0 left-0 z-30 w-72 overflow-y-auto p-4 transform -translate-x-full transition-transform duration-500 ease-in-out" aria-label="Sidenav" style="background-color: #2E4543">
+        <div class="overflow-y-auto py-5 px-3 h-full" style="background-color: #2E4543">
+            <ul class="space-y-2">
+                <li>
+                    <a href="/" class="flex items-center p-2 mt-20 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white hover:outline-dark dark:hover:bg-gray-700 group">
+                        <span class="ml-3">HOME</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/chat" class="flex items-center p-2 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white hover:outline-dark dark:hover:bg-gray-700 group">
+                        <span class="ml-3">AI CHAT</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/get-tokens" class="flex items-center p-2 text-white font-normal rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                      <span class="ml-3">GET TOKENS</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/news" class="flex items-center p-2 text-base font-normal text-white rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                        <span class="ml-3">NEWS</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/stocks" class="flex items-center p-2 text-base font-normal text-white rounded-lg dark:text-white hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 group">
+                        <span class="ml-3">STOCKS</span>
+                    </a>
+                </li>
+            </ul>
+            <ul class="pt-5 mt-5 space-y-2 border-t border-gray-200 dark:border-gray-700">
+                <li>
+                    <a href="/login" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">                                
+                        <span class="ml-3">LOGIN</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/account-settings" class="flex items-center p-2 text-base font-normal text-white rounded-lg hover:bg-gray-100 custom-hover-text dark:text-white dark:hover:bg-gray-700 group">                                
+                        <span class="ml-3">ACCOUNT</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/contact" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">
+                        <span class="ml-3">CONTACT US</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/disclaimers" class="flex items-center p-2 text-base font-normal text-white rounded-lg transition duration-75 hover:bg-gray-100 custom-hover-text dark:hover:bg-gray-700 dark:text-white group">                                
+                        <span class="ml-3">TERMS OF USE</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="pt-8 pb-16 lg:pt-16 lg:pb-24 bg-white dark:bg-gray-900 antialiased">
+        <div class="flex justify-between px-4 mx-auto max-w-screen-xl ">
+            <article class="mx-auto w-full max-w-2xl pt-24 format format-sm sm:format-base lg:format-lg format-blue dark:format-invert">
+                <h2 class="mb-4 text-xl tracking-tight font-extrabold text-center text-gray-900 dark:text-white">DAILY NEWS</h2>
+                
+                <!-- Disclaimer -->
+                <div class="mb-10 text-center">
+                    <p class="text-sm text-black dark:text-gray-300">
+                        This news content is summarized using AI. Grammar and phrasing may vary.
+                    </p>
+                </div>
+                
+                <!-- News Data Section -->
+                <div id="news-data-section" class="news-data">
+                    <!-- News content will be loaded here -->
+                </div>
+            </article>
+        </div>
+    </main>    
+
+    <!-- JavaScript for interactive components -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            var sidebar = document.getElementById('default-sidebar');
+            var toggleButton = document.getElementById('sidebarToggle'); 
+            var body = document.body;
+        
+            // Function to toggle sidebar
+            function toggleSidebar() {
+                console.log('Sidebar toggle clicked');
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebar.classList.add('translate-x-0');
+                    setTimeout(() => { overlay.classList.remove('opacity-0'); }, 20); // Delay for CSS transition
+                    body.classList.add('blur-mode');
+                } else {
+                    sidebar.classList.remove('translate-x-0');
+                    sidebar.classList.add('-translate-x-full');
+                    setTimeout(() => { overlay.classList.add('hidden'); }, 1000); // Match duration of transition
+                    body.classList.remove('blur-mode');
+                }
+            }
+        
+            // Event listener for the toggle button
+            toggleButton.addEventListener('click', toggleSidebar);
+
+            // Event listener for clicking outside the sidebar
+            document.addEventListener('click', function(event) {
+                var isClickInsideSidebar = sidebar.contains(event.target) || toggleButton.contains(event.target);
+                var isSidebarOpen = sidebar.classList.contains('translate-x-0');
+
+                if (!isClickInsideSidebar && isSidebarOpen) {
+                    toggleSidebar();
+                }
+            });
+
+            // Call the function to fetch news data on page load
+            fetchAndDisplayNewsData();
+            
+            });
+
+            // Function to fetch and display news data
+            function fetchAndDisplayNewsData() {
+                fetch('/get-news-data')
+                    .then(response => response.text())
+                    .then(data => {
+                        const newsDataSection = document.getElementById('news-data-section');
+                        const sentences = data.split('. '); // Splitting news data into sentences
+                        const list = document.createElement('ul'); // Creating an unordered list
+                        list.classList.add('list-disc', 'pl-5', 'text-justify', 'text-base', 'mb-4'); // Adding Tailwind classes
+
+
+                        sentences.forEach(sentence => {
+                            if(sentence.trim() !== '') {
+                                const listItem = document.createElement('li'); // Creating a list item
+                                listItem.textContent = sentence;
+                                listItem.classList.add('mb-2');
+                                list.appendChild(listItem); // Adding the list item to the unordered list
+                            }
+                        });
+
+                        newsDataSection.appendChild(list); // Adding the unordered list to the news data section
+                    })
+                    .catch(error => console.error('Error fetching news data:', error));
+            }
+        </script>  
+    </body>
+</html>
